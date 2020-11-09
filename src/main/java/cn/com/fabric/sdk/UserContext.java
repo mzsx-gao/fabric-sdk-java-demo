@@ -25,6 +25,7 @@ public class UserContext implements User, Serializable {
 
     private String mspId;
 
+    //定义加密算法
     static{
         Security.addProvider(new BouncyCastleProvider());
     }
