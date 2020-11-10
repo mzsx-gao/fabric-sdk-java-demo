@@ -112,7 +112,7 @@ public class FabricClient {
 
         //设置背书策略
         ChaincodeEndorsementPolicy chaincodeEndorsementPolicy = new ChaincodeEndorsementPolicy();
-        String endorsementPolicyFilePath="D:\\workspace\\ws-base\\fabric-sdk-java-demo\\src\\main\\resources\\endorsementpolicy.yaml";
+        String endorsementPolicyFilePath="/Users/gaoshudian/work/developer/workspace/personal/myworkspace/fabric-sdk-java-demo/src/main/resources/endorsementpolicy.yaml";
         chaincodeEndorsementPolicy.fromYamlFile(new File(endorsementPolicyFilePath));
         upgradeProposalRequest.setChaincodeEndorsementPolicy(chaincodeEndorsementPolicy);
 

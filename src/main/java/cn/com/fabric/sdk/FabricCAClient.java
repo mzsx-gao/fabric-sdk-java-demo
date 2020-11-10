@@ -21,7 +21,7 @@ public class FabricCAClient {
 
     private HFCAClient hfcaClient;
 
-    public FabricCAClient(String url, Properties properties) throws MalformedURLException, IllegalAccessException, InvocationTargetException, InvalidArgumentException, InstantiationException, NoSuchMethodException, CryptoException, ClassNotFoundException {
+    public FabricCAClient(String url, Properties properties) throws Exception {
         hfcaClient = HFCAClient.createNewInstance(url,properties);
         CryptoSuite cryptoSuite = CryptoSuite.Factory.getCryptoSuite();
         hfcaClient.setCryptoSuite(cryptoSuite);

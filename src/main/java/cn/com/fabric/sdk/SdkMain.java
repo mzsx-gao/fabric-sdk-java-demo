@@ -16,7 +16,7 @@ import java.util.Map;
 public class SdkMain {
 
     //资源路径
-    private static final String baseUrl = "/Users/gaoshudian/work/developer/workspace/personal/myworkspace/fabric-demo/src/main/resources/";
+    private static final String baseUrl = "/Users/gaoshudian/work/developer/workspace/personal/myworkspace/fabric-sdk-java-demo/src/main/resources/";
 
     //用户私钥和证书
     private static final String keyFilePath = baseUrl + "crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/e9163e7dfbd34e95f205a87e316ba9f69f5f50ff53d149edb81e0d98b13ad835_sk";
@@ -125,62 +125,73 @@ public class SdkMain {
         System.out.println(map);
     }
 
-    //注册用户 hqCZUStrRTAR
-//    public static void main(String[] args) throws Exception {
-//        FabricCAClient caClient = new FabricCAClient("http://192.168.70.43", null);
-//        UserContext register = new UserContext();
-//        register.setName("lihua");
-//        register.setAffiliation("org2");
-//        Enrollment enrollment = caClient.enroll("admin", "adminpw");
-//        UserContext registar = new UserContext();
-//        registar.setName("admin");
-//        registar.setAffiliation("org2");
-//        registar.setEnrollment(enrollment);
-//        String secret = caClient.register(registar, register);
-//        System.out.println(secret);
-//    }
+    //注册用户
+    @Test
+    public void registryUser() throws Exception {
+        FabricCAClient caClient = new FabricCAClient("http://172.16.216.130:7054", null);
+
+        //注册admin用户
+        Enrollment adminEnrollment = caClient.enroll("admin", "pass");
+        UserContext adminUser = new UserContext();
+        adminUser.setName("admin");
+        adminUser.setAffiliation("org1");
+        adminUser.setEnrollment(adminEnrollment);
+
+        //注册普通用户
+        UserContext user = new UserContext();
+        user.setName("xiaogao");
+        user.setAffiliation("org1");
+        String secret = caClient.register(adminUser, user);
+        System.out.println(secret);//PTynLlvwuFlv
+
+        Enrollment userEnrollment = caClient.enroll("xiaogao",secret);
+        System.out.println(userEnrollment.getCert());
+        System.out.println(userEnrollment.getKey());
+    }
 
     //注册用户查询合约
-//    public static void main(String[] args) throws Exception {
-//        FabricCAClient caClient = new FabricCAClient("http://192.168.70.43",null);
-//        UserContext userContext = new UserContext();
-//        userContext.setAffiliation("Org2");
-//        userContext.setMspId("Org2MSP");
-//        userContext.setAccount("李伟");
-//        userContext.setName("admin");
-//        Enrollment enrollment = caClient.enroll("lihua","hqCZUStrRTAR");
-//        userContext.setEnrollment(enrollment);
-//        FabricClient fabricClient = new FabricClient(userContext);
-//        Peer peer0 = fabricClient.getPeer("peer0.org1.example.com","grpcs://peer0.org1.example.com:7051",TLS_PEER_FILE);
-//        Peer peer1 = fabricClient.getPeer("peer0.org2.example.com","grpcs://peer0.org2.example.com:9051",TLS_PEER_FILEAddtion);
-//        List<Peer> peers = new ArrayList<>();
-//        peers.add(peer0);
-//        peers.add(peer1);
-//        String initArgs[] = {"110120"};
-//        Map map =  fabricClient.queryChaincode(peers,"mychannel", TransactionRequest.Type.GO_LANG,"basicinfo","query",initArgs);
-//        System.out.println(map);
-//    }
+    @Test
+    public void caQueryChaincode() throws Exception {
+        FabricCAClient caClient = new FabricCAClient("http://172.16.216.130:7054",null);
+        Enrollment enrollment = caClient.enroll("xiaogao","PTynLlvwuFlv");
+
+        UserContext userContext = new UserContext();
+        userContext.setAffiliation("Org1");
+        userContext.setMspId("Org1MSP");
+        userContext.setAccount("Admin");
+        userContext.setName("Admin");
+        userContext.setEnrollment(enrollment);
+        FabricClient fabricClient = new FabricClient(userContext);
+        Peer peer = fabricClient.getPeer("peer0.org1.example.com", "grpcs://peer0.org1.example.com:7051", TLS_PEER_FILE);
+        List<Peer> peers = new ArrayList<>();
+        peers.add(peer);
+        String initArgs[] = {"110120"};
+        Map map =  fabricClient.queryChaincode(peers,"testchannel", TransactionRequest.Type.GO_LANG,"basicinfo","query",initArgs);
+        System.out.println(map);
+    }
 
 
     //注册用户invoke合约
-    /*public static void main(String[] args) throws Exception {
-        FabricCAClient caClient = new FabricCAClient("http://192.168.70.43",null);
+    @Test
+    public void caInvokeChaincode() throws Exception {
+
+        FabricCAClient caClient = new FabricCAClient("http://172.16.216.130:7054",null);
+        Enrollment enrollment = caClient.enroll("xiaogao","PTynLlvwuFlv");
+
         UserContext userContext = new UserContext();
-        userContext.setAffiliation("Org2");
-        userContext.setMspId("Org2MSP");
-        userContext.setAccount("李伟");
-        userContext.setName("admin");
-        Enrollment enrollment = caClient.enroll("lihua","hqCZUStrRTAR");
+        userContext.setAffiliation("Org1");
+        userContext.setMspId("Org1MSP");
+        userContext.setAccount("Admin");
+        userContext.setName("Admin");
         userContext.setEnrollment(enrollment);
         FabricClient fabricClient = new FabricClient(userContext);
-        Peer peer0 = fabricClient.getPeer("peer0.org1.example.com","grpcs://peer0.org1.example.com:7051",TLS_PEER_FILE);
-        Peer peer1 = fabricClient.getPeer("peer0.org2.example.com","grpcs://peer0.org2.example.com:9051",TLS_PEER_FILEAddtion);
+        Peer peer = fabricClient.getPeer("peer0.org1.example.com", "grpcs://peer0.org1.example.com:7051", TLS_PEER_FILE);
         List<Peer> peers = new ArrayList<>();
-        peers.add(peer0);
-        peers.add(peer1);
-        Orderer order = fabricClient.getOrderer("orderer.example.com","grpcs://orderer.example.com:7050",TLS_ORDER_FILE);
-        String initArgs[] = {"110120","{\"name\":\"zhangsan\",\"identity\":\"110120\",\"mobile\":\"18910012222\"}"};
-        fabricClient.invoke("mychannel", TransactionRequest.Type.GO_LANG,"basicinfo",order,peers,"save",initArgs);
-    }*/
+        peers.add(peer);
+
+        Orderer order = fabricClient.getOrderer("orderer.example.com", "grpcs://orderer.example.com:7050", TLS_ORDER_FILE);
+        String initArgs[] = {"110114", "{\"name\":\"zhangsan\",\"identity\":\"110114\",\"mobile\":\"18910012222\"}"};
+        fabricClient.invoke("testchannel", TransactionRequest.Type.GO_LANG, "basicinfo", order, peers, "save", initArgs);
+    }
 
 }
