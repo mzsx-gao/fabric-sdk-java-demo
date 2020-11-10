@@ -130,7 +130,7 @@ public class SdkMain {
     public void registryUser() throws Exception {
         FabricCAClient caClient = new FabricCAClient("http://172.16.216.130:7054", null);
 
-        //注册admin用户
+        //获取admin用户凭证
         Enrollment adminEnrollment = caClient.enroll("admin", "pass");
         UserContext adminUser = new UserContext();
         adminUser.setName("admin");
