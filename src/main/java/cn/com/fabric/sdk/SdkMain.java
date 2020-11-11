@@ -144,6 +144,7 @@ public class SdkMain {
         String secret = caClient.register(adminUser, user);
         System.out.println(secret);//PTynLlvwuFlv
 
+        //enroll()方法可以理解为登录功能
         Enrollment userEnrollment = caClient.enroll("xiaogao",secret);
         System.out.println(userEnrollment.getCert());
         System.out.println(userEnrollment.getKey());

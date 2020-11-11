@@ -29,14 +29,17 @@ public class FabricCAClient {
 
     /**
      * @description 注册用户
-     * @param registar 注册管理员
-     * @param register 被注册人员
+     * @param adminUser 注册管理员
+     * @param user 被注册人员
      * @return secret 密码随机生成的字符串
      * @throws Exception
      */
-    public String register(UserContext registar,UserContext register) throws Exception {
-        RegistrationRequest request = new RegistrationRequest(register.getName(),register.getAffiliation());
-        String secret = hfcaClient.register(request,registar);
+    public String register(UserContext adminUser,UserContext user) throws Exception {
+        RegistrationRequest request = new RegistrationRequest(user.getName(),user.getAffiliation());
+        //让该用户具备注册其它用户的功能
+//        Attribute attribute = new Attribute("hf.Registrar.Roles","client、orderer、peer、user");
+//        request.addAttribute(attribute);
+        String secret = hfcaClient.register(request,adminUser);
         return secret;
     }
 
