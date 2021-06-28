@@ -1,7 +1,8 @@
+#背书策略
 identities:
   user1: {"role":{"name":"member","mspId":"Org1MSP"}}
   user2: {"role":{"name":"member","mspId":"Org2MSP"}}
 policy:
   1-of:
-    - singed-by: "user1"
-    - singed-by: "user2"
+    - signed-by: "user1"
+    - signed-by: "user2"

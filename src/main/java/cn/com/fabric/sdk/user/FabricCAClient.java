@@ -1,17 +1,11 @@
-package cn.com.fabric.sdk;
+package cn.com.fabric.sdk.user;
 
 import org.hyperledger.fabric.sdk.Enrollment;
-import org.hyperledger.fabric.sdk.exception.CryptoException;
-import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
-import org.hyperledger.fabric_ca.sdk.Attribute;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
 import org.hyperledger.fabric_ca.sdk.RegistrationRequest;
 import org.hyperledger.fabric_ca.sdk.exception.EnrollmentException;
-import org.w3c.dom.Attr;
 
-import java.lang.reflect.InvocationTargetException;
-import java.net.MalformedURLException;
 import java.util.Properties;
 
 /**
@@ -51,7 +45,7 @@ public class FabricCAClient {
      * @throws EnrollmentException
      * @throws org.hyperledger.fabric_ca.sdk.exception.InvalidArgumentException
      */
-    public Enrollment enroll(String username,String password) throws EnrollmentException, org.hyperledger.fabric_ca.sdk.exception.InvalidArgumentException {
+    public Enrollment enroll(String username,String password) throws Exception {
        Enrollment enrollment =  hfcaClient.enroll(username,password);
        return enrollment;
     }

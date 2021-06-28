@@ -1,4 +1,4 @@
-package cn.com.fabric.sdk;
+package cn.com.fabric.sdk.user;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.fabric.sdk.Enrollment;

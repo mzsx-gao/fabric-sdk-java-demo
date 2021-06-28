@@ -1,15 +1,13 @@
 package cn.com.fabric.sdk;
 
+import cn.com.fabric.sdk.user.UserContext;
 import org.hyperledger.fabric.sdk.*;
-import org.hyperledger.fabric.sdk.exception.*;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 public class FabricClient {
@@ -32,27 +30,31 @@ public class FabricClient {
      * order       order的信息
      * txPath      创建channel所需的tx文件
      */
-    Channel createChannel(String channelName, Orderer order, String txPath) throws Exception {
+    public Channel createChannel(String channelName, Orderer order, String txPath) throws Exception {
         ChannelConfiguration channelConfiguration = new ChannelConfiguration(new File(txPath));
         return hfClient.newChannel(channelName, order, channelConfiguration,
-                hfClient.getChannelConfigurationSignature(channelConfiguration, hfClient.getUserContext()));
+            hfClient.getChannelConfigurationSignature(channelConfiguration, hfClient.getUserContext()));
+    }
+
+    //获取已有的channel
+    public Channel getChannel(String channelName) throws Exception {
+        return hfClient.newChannel(channelName);
     }
 
     /**
      * 安装合约
-     * lang              合约开发语言
+     * chaincodeLocation 合约的目录路径
+     * CHAINCODE_PATH     合约的文件夹
      * chaincodeName     合约名称
      * chaincodeVersion  合约版本
-     * chaincodeLocation 合约的目录路径
-     * chaincodePath     合约的文件夹
      * peers             安装的peers 节点,一个组织机构的admin用户只能安装同一组织机构下的peer节点
      */
-    void installChaincode(TransactionRequest.Type lang, String chaincodeName, String chaincodeVersion,
-                                 String chaincodeLocation, String chaincodePath, List<Peer> peers) throws Exception {
+    public void installChaincode(String chaincodeLocation, String chaincodePath,
+                                 String chaincodeName, String chaincodeVersion, List<Peer> peers) throws Exception {
 
-        InstallProposalRequest installProposalRequest = hfClient.newInstallProposalRequest();
         ChaincodeID.Builder builder = ChaincodeID.newBuilder().setName(chaincodeName).setVersion(chaincodeVersion);
-        installProposalRequest.setChaincodeLanguage(lang);
+        InstallProposalRequest installProposalRequest = hfClient.newInstallProposalRequest();
+        installProposalRequest.setChaincodeLanguage(TransactionRequest.Type.GO_LANG);//chaincode开发语言
         installProposalRequest.setChaincodeID(builder.build());
         installProposalRequest.setChaincodeSourceLocation(new File(chaincodeLocation));
         installProposalRequest.setChaincodePath(chaincodePath);
@@ -67,23 +69,22 @@ public class FabricClient {
     }
 
     //合约的实例化
-    public void initChaincode(String channelName, TransactionRequest.Type lang, String chaincodeName, String chaincodeVersion,
-                              Orderer order, Peer peer, String funcName, String args[]) throws Exception {
-
+    public void initChaincode(String channelName, String chaincodeName, String chaincodeVersion, Orderer order,
+                              Peer peer, String funcName, String args[]) throws Exception {
         Channel channel = getChannel(channelName);
         channel.addPeer(peer);
         channel.addOrderer(order);
         channel.initialize();
 
         //构建实例化合约请求对象
-        InstantiateProposalRequest instantiateProposalRequest = hfClient.newInstantiationProposalRequest();
-        instantiateProposalRequest.setChaincodeLanguage(lang);
         ChaincodeID.Builder builder = ChaincodeID.newBuilder().setName(chaincodeName).setVersion(chaincodeVersion);
+        InstantiateProposalRequest instantiateProposalRequest = hfClient.newInstantiationProposalRequest();
+        instantiateProposalRequest.setChaincodeLanguage(TransactionRequest.Type.GO_LANG);
         instantiateProposalRequest.setChaincodeID(builder.build());
         instantiateProposalRequest.setFcn(funcName);
         instantiateProposalRequest.setArgs(args);
+        //1.发送提案，背书节点返回响应
         Collection<ProposalResponse> responses = channel.sendInstantiationProposal(instantiateProposalRequest);
-
         for (ProposalResponse response : responses) {
             if (response.getStatus().getStatus() == 200) {
                 log.info("{} init sucess", response.getPeer().getName());
@@ -91,28 +92,30 @@ public class FabricClient {
                 log.error("{} init fail", response.getMessage());
             }
         }
+        //2.提交事务
         channel.sendTransaction(responses);
     }
 
     //合约的升级
-    void upgradeChaincode(String channelName, TransactionRequest.Type lang, String chaincodeName, String chaincodeVersion,
-                                 Orderer order, Peer peer, String funcName, String args[]) throws Exception {
+    public void upgradeChaincode(String channelName, String chaincodeName, String chaincodeVersion,
+                          Orderer order, Peer peer, String funcName, String args[]) throws Exception {
 
         Channel channel = getChannel(channelName);
         channel.addPeer(peer);
         channel.addOrderer(order);
         channel.initialize();
 
-        UpgradeProposalRequest upgradeProposalRequest = hfClient.newUpgradeProposalRequest();
-        upgradeProposalRequest.setChaincodeLanguage(lang);
         ChaincodeID.Builder builder = ChaincodeID.newBuilder().setName(chaincodeName).setVersion(chaincodeVersion);
+        UpgradeProposalRequest upgradeProposalRequest = hfClient.newUpgradeProposalRequest();
+        upgradeProposalRequest.setChaincodeLanguage(TransactionRequest.Type.GO_LANG);
         upgradeProposalRequest.setChaincodeID(builder.build());
         upgradeProposalRequest.setFcn(funcName);
         upgradeProposalRequest.setArgs(args);
 
         //设置背书策略
         ChaincodeEndorsementPolicy chaincodeEndorsementPolicy = new ChaincodeEndorsementPolicy();
-        String endorsementPolicyFilePath="/Users/gaoshudian/work/developer/workspace/personal/myworkspace/fabric-sdk-java-demo/src/main/resources/endorsementpolicy.yaml";
+        String endorsementPolicyFilePath = "/Users/gaoshudian/work/developer/workspace/personal/myworkspace/" +
+            "fabric-sdk-java-demo/src/main/resources/endorsementpolicy.yaml";
         chaincodeEndorsementPolicy.fromYamlFile(new File(endorsementPolicyFilePath));
         upgradeProposalRequest.setChaincodeEndorsementPolicy(chaincodeEndorsementPolicy);
 
@@ -129,17 +132,18 @@ public class FabricClient {
     }
 
     //合约的调用
-    void invoke(String channelName, TransactionRequest.Type lang, String chaincodeName, Orderer order, List<Peer> peers,
-                       String funcName, String args[]) throws Exception {
+    public void invoke(String channelName, String chaincodeName, Orderer order, List<Peer> peers,
+                String funcName, String args[]) throws Exception {
         Channel channel = getChannel(channelName);
         channel.addOrderer(order);
+        //如果背书策略是多个peer,则这里必须将所有的背书节点加进来
         for (Peer p : peers) {
             channel.addPeer(p);
         }
         channel.initialize();
 
         TransactionProposalRequest transactionProposalRequest = hfClient.newTransactionProposalRequest();
-        transactionProposalRequest.setChaincodeLanguage(lang);
+        transactionProposalRequest.setChaincodeLanguage(TransactionRequest.Type.GO_LANG);
         ChaincodeID.Builder builder = ChaincodeID.newBuilder().setName(chaincodeName);
         transactionProposalRequest.setChaincodeID(builder.build());
         transactionProposalRequest.setFcn(funcName);
@@ -159,8 +163,8 @@ public class FabricClient {
     }
 
     //合约的查询
-    Map queryChaincode(List<Peer> peers, String channelName, TransactionRequest.Type lang, String chaincodeName,
-                              String funcName, String args[]) throws Exception {
+    public Map queryChaincode(List<Peer> peers, String channelName, String chaincodeName,
+                       String funcName, String args[]) throws Exception {
         Channel channel = getChannel(channelName);
         for (Peer p : peers) {
             channel.addPeer(p);
@@ -168,7 +172,7 @@ public class FabricClient {
         channel.initialize();
 
         QueryByChaincodeRequest queryByChaincodeRequest = hfClient.newQueryProposalRequest();
-        queryByChaincodeRequest.setChaincodeLanguage(lang);
+        queryByChaincodeRequest.setChaincodeLanguage(TransactionRequest.Type.GO_LANG);
         ChaincodeID.Builder builder = ChaincodeID.newBuilder().setName(chaincodeName);
         queryByChaincodeRequest.setChaincodeID(builder.build());
         queryByChaincodeRequest.setFcn(funcName);
@@ -180,7 +184,8 @@ public class FabricClient {
         for (ProposalResponse response : responses) {
             if (response.getStatus().getStatus() == 200) {
                 log.info("data is {}", response.getProposalResponse().getResponse().getPayload());
-                map.put(response.getStatus().getStatus(), new String(response.getProposalResponse().getResponse().getPayload().toByteArray()));
+                map.put(response.getStatus().getStatus(),
+                    new String(response.getProposalResponse().getResponse().getPayload().toByteArray()));
                 return map;
             } else {
                 log.error("data get error {}", response.getMessage());
@@ -194,7 +199,7 @@ public class FabricClient {
 
 
     //创建orderer对象，内部其实就是new Orderer
-    Orderer getOrderer(String name, String grpcUrl, String tlsFilePath) throws Exception {
+    public Orderer getOrderer(String name, String grpcUrl, String tlsFilePath) throws Exception {
         Properties properties = new Properties();
         properties.setProperty("pemFile", tlsFilePath);
         Orderer orderer = hfClient.newOrderer(name, grpcUrl, properties);
@@ -202,14 +207,11 @@ public class FabricClient {
     }
 
     //创建peer对象
-    Peer getPeer(String name, String grpcUrl, String tlsFilePath) throws Exception {
+    public Peer getPeer(String name, String grpcUrl, String tlsFilePath) throws Exception {
         Properties properties = new Properties();
         properties.setProperty("pemFile", tlsFilePath);
         return hfClient.newPeer(name, grpcUrl, properties);
     }
 
-    //获取已有的channel
-    Channel getChannel(String channelName) throws Exception {
-        return hfClient.newChannel(channelName);
-    }
+
 }

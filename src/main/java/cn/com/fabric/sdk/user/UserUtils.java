@@ -1,16 +1,14 @@
-package cn.com.fabric.sdk;
+package cn.com.fabric.sdk.user;
 
-import org.bouncycastle.crypto.CryptoException;
 import org.hyperledger.fabric.sdk.Enrollment;
-
 import javax.xml.bind.DatatypeConverter;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 
 /**
